@@ -1,33 +1,10 @@
-# MapReduce Weather Analysis System - Local Mode
-# Dependencies for local processing and API
-
-# Core data processing
 requests>=2.31.0
 pandas>=2.1.0
 numpy>=1.24.0
-
-# MapReduce framework (local mode)
 mrjob>=0.7.4
-
-# FastAPI web framework
 fastapi>=0.104.0
 uvicorn>=0.24.0
-
-# Additional web utilities
-python-multipart>=0.0.6
-
-# Date/time handling
+pydantic>=2.0.0
 python-dateutil>=2.8.0
-pytz>=2023.3
-
-# Testing framework
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-httpx>=0.25.0
-
-# Configuration management
-python-dotenv>=1.0.0
-
-# Optional: Data visualization
-matplotlib>=3.8.0
-seaborn>=0.13.0
+setuptools>=68.0.0
+aiofiles>=23.0.0

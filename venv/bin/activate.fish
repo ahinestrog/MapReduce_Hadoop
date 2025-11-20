@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV '/home/samuel/dev/Topicos Especiales En Telematica/MapReduce_Hadoop/venv'
+set -gx VIRTUAL_ENV /home/alejo/dev/topicosTelematica/proyecto3/MapReduce_Hadoop/venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

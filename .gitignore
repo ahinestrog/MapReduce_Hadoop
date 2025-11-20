@@ -1,114 +1,13 @@
-# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual Environment - INCLUIR VENV PARA COMPAÑERO
-# venv/              # Comentado para incluir entorno
-# env/               # Comentado para incluir entorno
-# ENV/               # Comentado para incluir entorno
-# .venv/             # Comentado para incluir entorno
-
-# Excluir solo archivos problemáticos del entorno
-venv/lib/python3.*/site-packages/*/tests/
-venv/lib/python3.*/site-packages/*/__pycache__/
-venv/share/
-venv/include/
-venv/lib64
 *.pyc
-
-# IDE
+venv/
 .vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-*.log
-logs/
-*.out
-
-# Temporary files
-*.tmp
-*.temp
-tmp/
-temp/
-
-# API keys and secrets
 .env
-.env.local
-.env.*.local
-secrets.json
-
-# Data files - EXCLUIR PARA QUE COMPAÑERO EJECUTE FLUJO COMPLETO
+*.log
+# Datos generados
 data/input/*.json
 data/input/*.jsonl
-!data/input/sample_*.json
-data/output/*/part-*
-data/output/*/*.json
-
-# Solo mantener archivos de ejemplo pequeños
-!data/input/sample_weather_data.jsonl
-
-# Excluir archivos temporales
+data/output/
 data/temp/
 data/cache/
-
-# Keep essential structure files
-!data/input/.gitkeep
-!data/output/.gitkeep
-!data/output/*/.gitkeep
-
-# Documentation build
-docs/_build/
-site/
-
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
-*.cover
-
-# pytest
-.pytest_cache/
-
-# mypy
-.mypy_cache/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Project specific
-cleanup_project.py
-reorganize_structure.py
-setup_project.py
-README_NEW.md
