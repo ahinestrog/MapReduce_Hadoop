@@ -5,6 +5,7 @@ venv/
 .vscode/
 .env
 *.log
+*.pem
 # Datos generados
 data/input/*.json
 data/input/*.jsonl
