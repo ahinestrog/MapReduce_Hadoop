@@ -44,7 +44,7 @@ python src/extraccion/extractor_clima.py
 python ejecutar_mapreduce.py
 ```
 
-O individualmente:
+O individualmente cada Job:
 
 ```bash
 python src/mapreduce/analisis_temperatura.py data/input/unified_weather_data.jsonl --output-dir data/output/analisis_temperatura
@@ -82,3 +82,4 @@ El sistema analiza datos de 8 ciudades:
 - Sydney (Australia)
 
 Fuente: Open-Meteo Archive API
+
