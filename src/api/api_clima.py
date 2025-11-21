@@ -86,14 +86,30 @@ def leer_resultados_mapreduce(patron: str) -> List[Dict]:
             contenido = cached_file_read(str(archivo), cache_key)
             for linea in contenido.strip().split('\n'):
                 if linea.strip():
-                    partes = linea.split('\t', 1)
+                    partes = linea.strip().split('\t', 1)
                     if len(partes) == 2:
-                        _, datos_json = partes
-                        datos = json.loads(datos_json)
-                        if isinstance(datos, str):
-                            datos = json.loads(datos)
-                        if isinstance(datos, dict):
-                            resultados.append(datos)
+                        clave, valor = partes
+                        try:
+                            datos = json.loads(valor)
+                            if isinstance(datos, str):
+                                datos = json.loads(datos)
+                            if isinstance(datos, dict):
+                                resultados.append(datos)
+                        except json.JSONDecodeError:
+                            try:
+                                clave_clean = clave.strip('"')
+                                datos = json.loads(clave_clean)
+                                if isinstance(datos, dict):
+                                    resultados.append(datos)
+                            except:
+                                continue
+                    elif len(partes) == 1:
+                        try:
+                            datos = json.loads(partes[0])
+                            if isinstance(datos, dict):
+                                resultados.append(datos)
+                        except:
+                            continue
         except Exception:
             continue
     return resultados
@@ -136,24 +152,20 @@ async def get_temperature_analysis(
         
         resultados = []
         for stats in datos:
-            if climate_zone and stats.get('climate_zone') != climate_zone:
+            zona = stats.get('zona_climatica') or stats.get('climate_zone', '')
+            if climate_zone and zona != climate_zone:
                 continue
-            if analysis_type != "all" and stats.get('analysis_type') != analysis_type:
-                continue
-            
-            temp_stats = stats.get('temperature_stats', {})
-            comfort_stats = stats.get('comfort_analysis', {})
             
             resultados.append(EstadisticasTemperatura(
-                zona_climatica=stats['climate_zone'],
-                total_registros=stats['record_count'],
-                paises=stats['countries'],
-                temperatura_promedio=temp_stats.get('mean_temperature', 0),
-                temperatura_maxima_general=temp_stats.get('max_temperature_overall', 0),
-                temperatura_minima_general=temp_stats.get('min_temperature_overall', 0),
-                variabilidad_temperatura=temp_stats.get('temperature_variability', 0),
-                porcentaje_confort=comfort_stats.get('comfort_percentage', 0),
-                tipo_analisis=stats['analysis_type']
+                zona_climatica=zona,
+                total_registros=stats.get('total_registros', 0),
+                paises=stats.get('paises', []),
+                temperatura_promedio=stats.get('temperatura_promedio', 0),
+                temperatura_maxima_general=stats.get('temperatura_maxima_general', 0),
+                temperatura_minima_general=stats.get('temperatura_minima_general', 0),
+                variabilidad_temperatura=stats.get('variabilidad_temperatura', 0),
+                porcentaje_confort=stats.get('porcentaje_confort', 0),
+                tipo_analisis=stats.get('tipo_analisis', 'all')
             ))
         
         if not resultados:
@@ -179,25 +191,19 @@ async def get_precipitation_analysis(
         
         resultados = []
         for stats in datos:
-            if country and stats.get('country') != country:
+            pais = stats.get('pais') or stats.get('country', '')
+            if country and pais != country:
                 continue
-            
-            precip_summary = stats.get('precipitation_summary', {})
-            if humidity_class and precip_summary.get('humidity_classification') != humidity_class:
-                continue
-            
-            day_analysis = stats.get('day_analysis', {})
-            seasonal_analysis = stats.get('seasonal_analysis', {})
             
             resultados.append(EstadisticasPrecipitacion(
-                pais=stats['country'],
-                zonas_climaticas=stats.get('climate_zones', []),
-                total_dias_analizados=stats['total_days_analyzed'],
-                precipitacion_total_mm=precip_summary.get('total_precipitation_mm', 0),
-                precipitacion_promedio_diaria=precip_summary.get('average_daily_precipitation', 0),
-                clasificacion_humedad=precip_summary.get('humidity_classification', 'desconocido'),
-                porcentaje_dias_lluviosos=day_analysis.get('rainy_days_percentage', 0),
-                analisis_estacional=seasonal_analysis
+                pais=pais,
+                zonas_climaticas=stats.get('zonas_climaticas', []),
+                total_dias_analizados=stats.get('total_dias_analizados', 0),
+                precipitacion_total_mm=stats.get('precipitacion_total_mm', 0),
+                precipitacion_promedio_diaria=stats.get('precipitacion_promedio_diaria', 0),
+                clasificacion_humedad=stats.get('clasificacion_humedad', 'desconocido'),
+                porcentaje_dias_lluviosos=stats.get('porcentaje_dias_lluviosos', 0),
+                analisis_estacional=stats.get('analisis_estacional', {})
             ))
         
         return resultados
@@ -219,25 +225,20 @@ async def get_extreme_weather(
         
         resultados = []
         for stats in datos:
-            if location and stats.get('location_key') != location:
+            ubicacion = stats.get('ubicacion') or stats.get('location_key', '')
+            if location and ubicacion != location:
                 continue
-            
-            risk_analysis = stats.get('risk_analysis', {})
-            if risk_level and risk_analysis.get('risk_level') != risk_level:
-                continue
-            
-            event_summary = stats.get('event_summary', {})
             
             resultados.append(EventoExtremo(
-                ubicacion=stats['location_key'],
-                zona_climatica=stats['climate_zone'],
-                pais=stats.get('country'),
-                total_eventos=event_summary.get('total_extreme_events', 0),
-                total_dias_analizados=stats.get('total_days_analyzed', 0),
-                porcentaje_extremo=event_summary.get('extreme_percentage', 0),
-                puntuacion_riesgo_general=risk_analysis.get('overall_risk_score', 0),
-                nivel_riesgo=risk_analysis.get('risk_level', 'bajo'),
-                eventos_por_tipo=event_summary.get('events_by_type', {})
+                ubicacion=ubicacion,
+                zona_climatica=stats.get('zona_climatica', ''),
+                pais=stats.get('pais'),
+                total_eventos=stats.get('total_eventos', 0),
+                total_dias_analizados=stats.get('total_dias_analizados', 0),
+                porcentaje_extremo=stats.get('porcentaje_extremo', 0),
+                puntuacion_riesgo_general=stats.get('puntuacion_riesgo_general', 0),
+                nivel_riesgo=stats.get('nivel_riesgo', 'bajo'),
+                eventos_por_tipo=stats.get('eventos_por_tipo', {})
             ))
         
         return resultados
