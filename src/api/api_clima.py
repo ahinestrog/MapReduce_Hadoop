@@ -114,6 +114,62 @@ def leer_resultados_mapreduce(patron: str) -> List[Dict]:
             continue
     return resultados
 
+# Normalización de claves para soportar múltiples formatos de salida de los jobs
+def normalizar_registro_temperatura(r: Dict) -> Dict:
+    return {
+        "zona_climatica": r.get("zona_climatica") or r.get("climate_zone", ""),
+        "total_registros": r.get("total_registros") or r.get("registros", 0),
+        "paises": r.get("paises") or r.get("countries", []),
+        "temperatura_promedio": r.get("temperatura_promedio") or r.get("temp_promedio") or r.get("mean_temperature", 0),
+        "temperatura_maxima_general": r.get("temperatura_maxima_general") or r.get("temp_maxima") or r.get("max_temperature_overall", 0),
+        "temperatura_minima_general": r.get("temperatura_minima_general") or r.get("temp_minima") or r.get("min_temperature_overall", 0),
+        "variabilidad_temperatura": r.get("variabilidad_temperatura") or r.get("variabilidad") or r.get("temperature_variability", 0),
+        "porcentaje_confort": r.get("porcentaje_confort") or r.get("comfort_percentage", 0),
+        "tipo_analisis": r.get("tipo_analisis") or r.get("analysis_type", "general")
+    }
+
+def normalizar_registro_precipitacion(r: Dict) -> Dict:
+    # Campos originales
+    pais = r.get("pais") or r.get("country", "")
+    zonas_climaticas = r.get("zonas_climaticas") or r.get("climate_zones", [])
+    total_dias_analizados = r.get("total_dias_analizados") or r.get("total_days_analyzed", 0)
+    precipitacion_total_mm = r.get("precipitacion_total_mm") or r.get("total_precipitation_mm", 0)
+    precipitacion_promedio_diaria = r.get("precipitacion_promedio_diaria") or r.get("average_daily_precipitation", 0)
+    clasificacion_humedad = r.get("clasificacion_humedad") or r.get("humidity_classification", "desconocido")
+    porcentaje_dias_lluviosos = r.get("porcentaje_dias_lluviosos") or r.get("rainy_days_percentage", 0)
+    analisis_estacional = r.get("analisis_estacional") or r.get("seasonal_analysis", {})
+
+    # Alias para compatibilidad
+    return {
+        "pais": pais,
+        "zonas_climaticas": zonas_climaticas,
+        "total_dias_analizados": total_dias_analizados,
+        "precipitacion_total_mm": precipitacion_total_mm,
+        "precipitacion_promedio_diaria": precipitacion_promedio_diaria,
+        "clasificacion_humedad": clasificacion_humedad,
+        "porcentaje_dias_lluviosos": porcentaje_dias_lluviosos,
+        "analisis_estacional": analisis_estacional,
+        # Alias cortos
+        "total_dias": total_dias_analizados,
+        "precip_total_mm": precipitacion_total_mm,
+        "precip_promedio": precipitacion_promedio_diaria,
+        "dias_lluviosos": round(total_dias_analizados * porcentaje_dias_lluviosos / 100) if porcentaje_dias_lluviosos else 0,
+        "porcentaje_lluvia": porcentaje_dias_lluviosos
+    }
+
+def normalizar_registro_extremo(r: Dict) -> Dict:
+    return {
+        "ubicacion": r.get("ubicacion") or r.get("location_key", ""),
+        "zona_climatica": r.get("zona_climatica") or r.get("climate_zone", ""),
+        "pais": r.get("pais") or r.get("country"),
+        "total_eventos": r.get("total_eventos") or r.get("total_extreme_events", 0),
+        "total_dias_analizados": r.get("total_dias_analizados") or r.get("total_days_analyzed", 0),
+        "porcentaje_extremo": r.get("porcentaje_extremo") or r.get("extreme_percentage", 0),
+        "puntuacion_riesgo_general": r.get("puntuacion_riesgo_general") or r.get("overall_risk_score", 0),
+        "nivel_riesgo": r.get("nivel_riesgo") or r.get("risk_level", "bajo"),
+        "eventos_por_tipo": r.get("eventos_por_tipo") or r.get("events_by_type", {})
+    }
+
 @app.get("/health", response_model=HealthStatus, tags=["Sistema"])
 async def health_check(config: APIConfig = Depends(get_config)):
     uptime = (datetime.now() - config.startup_time).total_seconds()
@@ -152,21 +208,10 @@ async def get_temperature_analysis(
         
         resultados = []
         for stats in datos:
-            zona = stats.get('zona_climatica') or stats.get('climate_zone', '')
-            if climate_zone and zona != climate_zone:
+            normalizado = normalizar_registro_temperatura(stats)
+            if climate_zone and normalizado["zona_climatica"] != climate_zone:
                 continue
-            
-            resultados.append(EstadisticasTemperatura(
-                zona_climatica=zona,
-                total_registros=stats.get('total_registros', 0),
-                paises=stats.get('paises', []),
-                temperatura_promedio=stats.get('temperatura_promedio', 0),
-                temperatura_maxima_general=stats.get('temperatura_maxima_general', 0),
-                temperatura_minima_general=stats.get('temperatura_minima_general', 0),
-                variabilidad_temperatura=stats.get('variabilidad_temperatura', 0),
-                porcentaje_confort=stats.get('porcentaje_confort', 0),
-                tipo_analisis=stats.get('tipo_analisis', 'all')
-            ))
+            resultados.append(EstadisticasTemperatura(**normalizado))
         
         if not resultados:
             raise HTTPException(status_code=404, detail=f"No se encontraron datos para zona={climate_zone}, tipo={analysis_type}")
@@ -191,20 +236,10 @@ async def get_precipitation_analysis(
         
         resultados = []
         for stats in datos:
-            pais = stats.get('pais') or stats.get('country', '')
-            if country and pais != country:
+            normalizado = normalizar_registro_precipitacion(stats)
+            if country and normalizado["pais"] != country:
                 continue
-            
-            resultados.append(EstadisticasPrecipitacion(
-                pais=pais,
-                zonas_climaticas=stats.get('zonas_climaticas', []),
-                total_dias_analizados=stats.get('total_dias_analizados', 0),
-                precipitacion_total_mm=stats.get('precipitacion_total_mm', 0),
-                precipitacion_promedio_diaria=stats.get('precipitacion_promedio_diaria', 0),
-                clasificacion_humedad=stats.get('clasificacion_humedad', 'desconocido'),
-                porcentaje_dias_lluviosos=stats.get('porcentaje_dias_lluviosos', 0),
-                analisis_estacional=stats.get('analisis_estacional', {})
-            ))
+            resultados.append(EstadisticasPrecipitacion(**normalizado))
         
         return resultados
     except HTTPException:
@@ -225,21 +260,10 @@ async def get_extreme_weather(
         
         resultados = []
         for stats in datos:
-            ubicacion = stats.get('ubicacion') or stats.get('location_key', '')
-            if location and ubicacion != location:
+            normalizado = normalizar_registro_extremo(stats)
+            if location and normalizado["ubicacion"] != location:
                 continue
-            
-            resultados.append(EventoExtremo(
-                ubicacion=ubicacion,
-                zona_climatica=stats.get('zona_climatica', ''),
-                pais=stats.get('pais'),
-                total_eventos=stats.get('total_eventos', 0),
-                total_dias_analizados=stats.get('total_dias_analizados', 0),
-                porcentaje_extremo=stats.get('porcentaje_extremo', 0),
-                puntuacion_riesgo_general=stats.get('puntuacion_riesgo_general', 0),
-                nivel_riesgo=stats.get('nivel_riesgo', 'bajo'),
-                eventos_por_tipo=stats.get('eventos_por_tipo', {})
-            ))
+            resultados.append(EventoExtremo(**normalizado))
         
         return resultados
     except HTTPException:
@@ -283,7 +307,14 @@ async def export_analysis_data(
         raise HTTPException(status_code=400, detail="Tipo de análisis inválido. Opciones: temperatura, precipitacion, extremos")
     
     try:
-        datos = leer_resultados_mapreduce(f"{tipo_map[analysis_type]}/part-*")
+        datos_crudos = leer_resultados_mapreduce(f"{tipo_map[analysis_type]}/part-*")
+        # Normalizar según tipo
+        if analysis_type == "temperatura":
+            datos = [normalizar_registro_temperatura(r) for r in datos_crudos]
+        elif analysis_type == "precipitacion":
+            datos = [normalizar_registro_precipitacion(r) for r in datos_crudos]
+        else:  # extremos
+            datos = [normalizar_registro_extremo(r) for r in datos_crudos]
         if not datos:
             raise HTTPException(status_code=404, detail="No hay datos disponibles")
         
